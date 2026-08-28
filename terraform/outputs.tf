@@ -17,8 +17,3 @@ output "cloudfront_domain_name" {
   value       = aws_cloudfront_distribution.s3_distribution.domain_name
   description = "Public domain name of the CloudFront CDN endpoint"
 }
-
-output "github_actions_role_arn" {
-  value       = aws_iam_role.github_actions_role.arn
-  description = "ARN of the IAM Role for GitHub Actions OIDC authentication"
-}
