@@ -21,3 +21,15 @@ variable "github_repo" {
   default     = "bhushanc2003/all-you-want"
   description = "GitHub repository in format org/repo for OIDC trust restriction"
 }
+
+variable "domain_name" {
+  type        = string
+  default     = "allyouwant.xyz"
+  description = "Custom domain name for the web app (e.g. allyouwant.xyz)"
+}
+
+variable "use_custom_domain" {
+  type        = bool
+  default     = true
+  description = "Whether to attach custom domain and request ACM SSL certificate"
+}

@@ -54,6 +54,23 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 }
 
 # -----------------------------------------------------------------------------
+# ACM SSL CERTIFICATE FOR CUSTOM DOMAIN (Must be in us-east-1 for CloudFront)
+# -----------------------------------------------------------------------------
+resource "aws_acm_certificate" "cert" {
+  count             = var.use_custom_domain ? 1 : 0
+  provider          = aws.us_east_1
+  domain_name       = var.domain_name
+  validation_method = "DNS"
+  subject_alternative_names = [
+    "*.${var.domain_name}"
+  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# -----------------------------------------------------------------------------
 # CLOUDFRONT DISTRIBUTION
 # -----------------------------------------------------------------------------
 resource "aws_cloudfront_distribution" "s3_distribution" {
@@ -62,6 +79,8 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
   default_root_object = "index.html"
   price_class         = "PriceClass_100"
   comment             = "All You Want Web App CDN Distribution"
+
+  aliases = var.use_custom_domain ? [var.domain_name, "www.${var.domain_name}"] : []
 
   origin {
     domain_name              = aws_s3_bucket.website_bucket.bucket_regional_domain_name
@@ -109,7 +128,19 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     }
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
+  dynamic "viewer_certificate" {
+    for_each = var.use_custom_domain ? [1] : []
+    content {
+      acm_certificate_arn      = aws_acm_certificate.cert[0].arn
+      ssl_support_method       = "sni-only"
+      minimum_protocol_version = "TLSv1.2_2021"
+    }
+  }
+
+  dynamic "viewer_certificate" {
+    for_each = var.use_custom_domain ? [] : [1]
+    content {
+      cloudfront_default_certificate = true
+    }
   }
 }
