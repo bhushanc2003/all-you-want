@@ -22,7 +22,28 @@ jobs:
         uses: actions/checkout@v4
 
       # -----------------------------------------------------------------------
-      # STEP 1: Authenticate with AWS using OIDC (OpenID Connect - Passwordless)
+      # DEBUG STEP: Inspect Exact OIDC Claims Sent by GitHub
+      # -----------------------------------------------------------------------
+      - name: Inspect OIDC Token Claims
+        run: |
+          echo "=== Fetching GitHub OIDC Token Claims ==="
+          TOKEN_RESPONSE=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com")
+          RAW_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.value')
+          
+          if [ "$RAW_TOKEN" != "null" ] && [ -n "$RAW_TOKEN" ]; then
+            PAYLOAD=$(echo "$RAW_TOKEN" | cut -d. -f2)
+            # Add base64 padding if needed
+            MOD=$(( ${#PAYLOAD} % 4 ))
+            if [ $MOD -eq 2 ]; then PAYLOAD="${PAYLOAD}=="; elif [ $MOD -eq 3 ]; then PAYLOAD="${PAYLOAD}="; fi
+            
+            echo "Decoded OIDC Token Claims:"
+            echo "$PAYLOAD" | base64 -d 2>/dev/null | jq '{iss, aud, sub, repository, repository_owner, ref, event_name}'
+          else
+            echo "Failed to fetch OIDC token"
+          fi
+
+      # -----------------------------------------------------------------------
+      # STEP 1: Authenticate with AWS using OIDC (OpenID Connect)
       # -----------------------------------------------------------------------
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -59,7 +80,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: app/package-lock.json
 
