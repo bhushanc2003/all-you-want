@@ -1,0 +1,4 @@
+aws_region   = "ap-south-1"
+bucket_name  = "all-you-want-web-app-bucket"
+environment  = "production"
+github_repo  = "bhushanc2003/all-you-want"
